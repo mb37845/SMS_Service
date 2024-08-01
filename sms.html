@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropdown Menu</title>
+    <link rel="stylesheet" href="sms.css">
+</head>
+<body>
+    <h1>SMS_Service</h1>
+    <h1>Choose who you want to send sms to</h1>
+    <div class="select">
+       <select name="format" id="dropdown-menu1" >
+          <option value="">Company</option>
+       </select>
+    </div>
+    
+    <div class="select">
+       <select name="format" id="dropdown-menu2" >
+          <option value="">Investor</option>
+       </select>
+    </div>
+    <div>
+        <button id="submit-btn" class = "center-button">Submit</button>
+    </div>
+    
+        
+</body>
+</html>
+
+<script>
+    function confirmAction() {
+            // Display a confirmation dialog
+            let userConfirmed = confirm("The message will be sent for every one. Do you want to continue?");
+            return userConfirmed;
+        }
+    document.addEventListener('DOMContentLoaded', () => {
+    const apiUrl_companies = "http://127.0.0.1:5000/get_companies";
+    const dropdownMenu1 = document.getElementById('dropdown-menu1');
+    const dropdownMenu2 = document.getElementById('dropdown-menu2');
+    const submitBtn = document.getElementById('submit-btn');
+
+    fetch(apiUrl_companies, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+           .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data =>  {
+            data.companies_name.forEach(item => {
+                console.log(item[0]);
+                const option = document.createElement('option');
+                option.textContent = item[0];
+                option.value = item[0]; 
+                dropdownMenu1.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+        // Add event listener to the first dropdown
+        dropdownMenu1.addEventListener('change', (event) => {
+        const selectedValue = event.target.value;
+
+        // Clear the second dropdown
+        dropdownMenu2.innerHTML = '<option value="">Select an option</option>';
+        dropdownMenu2.disabled = true;
+
+        // If no valid option is selected, return
+        if (!selectedValue) {
+            return;
+        }
+
+        // Fetch data for the second dropdown based on the selected value of the first dropdown
+        const apiUrl_investors  = `http://127.0.0.1:5000/get_investores/${selectedValue}`;
+        fetch(apiUrl_investors, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+         },
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                data.investores_info.forEach(post => {
+                    const option = document.createElement('option');
+                    option.textContent = post[4]; 
+                    option.value = post[4]; 
+                    dropdownMenu2.appendChild(option);
+                });
+                dropdownMenu2.disabled = false;
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    });
+
+    // Add event listener to the submit button
+    submitBtn.addEventListener('click', () => {
+        let selectedValue1 = dropdownMenu1.value;
+        let selectedValue2 = dropdownMenu2.value;
+
+        if(!selectedValue1){
+            if(!confirmAction()){return;}
+            selectedValue1 = 'None';
+            selectedValue2 = 'None';
+        }
+        else if (!selectedValue2) {
+            if(!confirmAction()){return;}
+            selectedValue2 = 'None';
+        }
+
+        // Handle the function according to the values of the two dropdown menus
+        handleSubmit(selectedValue1, selectedValue2);
+    });
+
+    function handleSubmit(value1, value2) {
+        // Your function logic here
+        console.log(`First dropdown selected value: ${value1}`);
+        console.log(`Second dropdown selected value: ${value2}`);
+        // Example: Fetching data based on both dropdown values
+        let apiUrl_send_sms  = `http://127.0.0.1:5000/send_sms/${value1}/${value2}`;
+        fetch(apiUrl_send_sms, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+         },
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Data:', data['messages']);
+                alert("Message has been sent");
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    }
+});
+
+</script>
